@@ -1,125 +1,128 @@
 import * as vscode from 'vscode';
 import { scanContext } from './scanner';
-import { getTemplatesForKeyword, TRIGGER_KEYWORDS, Template } from './templates';
+import { getTemplatesForKeyword, TRIGGER_KEYWORDS, Template, ScannedContext } from './templates';
 
-// ──────────────────────────────────────────
-// Extension activate
-// ──────────────────────────────────────────
+// Single debounce timer shared across all keystrokes
+let debounceTimer: NodeJS.Timeout | undefined;
+
 export function activate(context: vscode.ExtensionContext) {
 
-  // 1. Manual command: Ctrl+Shift+A — prompts for algorithm name then shows picker
-  const manualCommand = vscode.commands.registerCommand('algosnap.insertTemplate', async () => {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
+  // 1. Manual command — Ctrl+Shift+A
+  const manualCommand = vscode.commands.registerCommand(
+    'algosnap.insertTemplate',
+    async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) return;
 
-    const keyword = await vscode.window.showInputBox({
-      prompt: 'Which algorithm? (e.g. binary search, sliding window, dfs)',
-      placeHolder: 'binary search'
-    });
-    if (!keyword) return;
+      const keyword = await vscode.window.showInputBox({
+        prompt: 'Which algorithm? (e.g. binary search, sliding window, dfs)',
+        placeHolder: 'binary search',
+      });
+      if (!keyword) return;
+      await showTemplatePicker(editor, keyword.trim(), false);
+    }
+  );
 
-    await showTemplatePicker(editor, keyword);
-  });
-
-  // 2. Auto-trigger: watch for keyword typed at end of a line
-  const typingListener = vscode.workspace.onDidChangeTextDocument(async (event) => {
+  // 2. Auto-trigger — fires when keyword is typed at end of a line
+  const typingListener = vscode.workspace.onDidChangeTextDocument((event) => {
     const cfg = vscode.workspace.getConfiguration('algosnap');
     if (!cfg.get<boolean>('triggerOnType', true)) return;
 
     const editor = vscode.window.activeTextEditor;
     if (!editor || event.document !== editor.document) return;
 
-    const cursor = editor.selection.active;
-    const lineText = editor.document.lineAt(cursor.line).text.trimEnd();
+    // Capture state NOW before the async wait
+    const capturedLine    = editor.selection.active.line;
+    const capturedVersion = event.document.version;
+    const lineText        = event.document.lineAt(capturedLine).text;
 
-    // Check if the line now ends with a known trigger keyword
-    const matched = TRIGGER_KEYWORDS.find(kw =>
-      lineText.toLowerCase().endsWith(kw)
-    );
+    // Trim both ends so indentation and trailing spaces don't break matching
+    const trimmed = lineText.trim().toLowerCase();
+
+    const matched = TRIGGER_KEYWORDS.find(kw => trimmed.endsWith(kw.toLowerCase()));
     if (!matched) return;
 
-    // Small debounce — only fire if user paused typing
-    await new Promise(r => setTimeout(r, 300));
+    // Proper debounce — cancel pending trigger and restart timer
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(async () => {
 
-    // Re-check the line is still there after debounce
-    const currentLine = editor.document.lineAt(cursor.line).text.trimEnd();
-    if (!currentLine.toLowerCase().endsWith(matched)) return;
+      // Guard 1: document changed during wait → abort
+      if (editor.document.version !== capturedVersion) return;
 
-    await showTemplatePicker(editor, matched, /* replaceKeyword */ true);
+      // Guard 2: line content changed during wait → abort
+      const currentText = editor.document.lineAt(capturedLine).text.trim().toLowerCase();
+      if (!currentText.endsWith(matched.toLowerCase())) return;
+
+      // Guard 3: editor lost focus → abort
+      if (vscode.window.activeTextEditor !== editor) return;
+
+      await showTemplatePicker(editor, matched, true);
+
+    }, 400);
   });
 
   context.subscriptions.push(manualCommand, typingListener);
-  console.log('AlgoSnap activated');
 }
 
-// ──────────────────────────────────────────
-// Core: show the Quick Pick and insert code
-// ──────────────────────────────────────────
 async function showTemplatePicker(
   editor: vscode.TextEditor,
   keyword: string,
-  replaceKeyword = false
+  replaceKeyword: boolean
 ) {
   const ctx = scanContext(editor);
   const templates = getTemplatesForKeyword(keyword, ctx);
 
   if (templates.length === 0) {
     vscode.window.showInformationMessage(
-      `AlgoSnap: No templates found for "${keyword}" in ${ctx.language}.`
+      `AlgoSnap: no templates for "${keyword}" in ${ctx.language}. Supported: Python, C++, Java.`
     );
     return;
   }
 
-  // Build Quick Pick items showing what variables will be used
   const varPreview = buildVarPreview(ctx);
+
   const items: (vscode.QuickPickItem & { template: Template })[] = templates.map(t => ({
-    label: t.label,
+    label:       `$(code) ${t.label}`,
     description: t.description,
-    detail: `${t.detail}  ${varPreview}`,
-    template: t
+    detail:      `${t.detail}   ${varPreview}`,
+    template:    t,
   }));
 
   const picked = await vscode.window.showQuickPick(items, {
-    title: `AlgoSnap — ${keyword}  [${ctx.language}]`,
-    placeHolder: 'Choose a template variant',
-    matchOnDescription: true
+    title:              `AlgoSnap — ${keyword}  [${ctx.language}]`,
+    placeHolder:        'Pick a variant — arrow keys to browse, Enter to insert',
+    matchOnDescription: true,
+    matchOnDetail:      false,
   });
   if (!picked) return;
 
   const code = picked.template.generate(ctx);
+  const snippet = new vscode.SnippetString(code);
 
-  await editor.edit(editBuilder => {
-    if (replaceKeyword) {
-      // Replace the typed keyword on the current line with the template
-      const line = editor.selection.active.line;
-      const lineRange = editor.document.lineAt(line).range;
-      const lineText = editor.document.lineAt(line).text;
-      const kwStart = lineText.toLowerCase().lastIndexOf(keyword.toLowerCase());
-      if (kwStart >= 0) {
-        const replaceRange = new vscode.Range(
-          new vscode.Position(line, kwStart),
-          lineRange.end
-        );
-        editBuilder.replace(replaceRange, code);
-        return;
-      }
+  if (replaceKeyword) {
+    const line      = editor.selection.active.line;
+    const lineText  = editor.document.lineAt(line).text;
+    const kwStart   = lineText.toLowerCase().lastIndexOf(keyword.toLowerCase());
+    if (kwStart >= 0) {
+      const replaceRange = new vscode.Range(
+        new vscode.Position(line, kwStart),
+        editor.document.lineAt(line).range.end
+      );
+      await editor.edit(eb => eb.delete(replaceRange));
     }
-    // Default: insert at cursor
-    editBuilder.insert(editor.selection.active, code);
-  });
+  }
 
-  // Move cursor to the end of inserted code
-  const newPos = editor.selection.active;
-  editor.selection = new vscode.Selection(newPos, newPos);
+  await editor.insertSnippet(snippet);
 }
 
-// Show which variables were detected from context
-function buildVarPreview(ctx: import('./scanner').ScannedContext): string {
+function buildVarPreview(ctx: ScannedContext): string {
   const parts: string[] = [];
-  if (ctx.arrays.length > 0) parts.push(`arrays: ${ctx.arrays.slice(0, 3).join(', ')}`);
-  if (ctx.integers.length > 0) parts.push(`ints: ${ctx.integers.slice(0, 4).join(', ')}`);
-  if (parts.length === 0) return '(using default names)';
-  return `· detected ${parts.join(' | ')}`;
+  if (ctx.arrays.length)   parts.push(`arrays: ${ctx.arrays.slice(0, 3).join(', ')}`);
+  if (ctx.integers.length) parts.push(`ints: ${ctx.integers.slice(0, 4).join(', ')}`);
+  if (ctx.strings.length)  parts.push(`strings: ${ctx.strings.slice(0, 2).join(', ')}`);
+  return parts.length ? `· detected ${parts.join(' | ')}` : '· using default names';
 }
 
-export function deactivate() {}
+export function deactivate() {
+  clearTimeout(debounceTimer);
+}
