@@ -1,46 +1,52 @@
 {
   "name": "algosnap",
   "displayName": "AlgoSnap",
-  "description": "Smart algorithm templates with context-aware variable injection",
-  "version": "0.1.0",
+  "description": "Offline algorithm templates for Python, C++, and Java with editable context-aware parameter names.",
+  "version": "0.2.0",
+  "publisher": "algosnap-local",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/SaumyaJoshi2005/AlgoSnap.git" },
+  "homepage": "https://github.com/SaumyaJoshi2005/AlgoSnap#readme",
+  "bugs": { "url": "https://github.com/SaumyaJoshi2005/AlgoSnap/issues" },
   "engines": { "vscode": "^1.85.0" },
   "categories": ["Snippets", "Programming Languages"],
-  "activationEvents": [],
+  "keywords": ["algorithms", "competitive programming", "python", "cpp", "java", "snippets"],
+  "icon": "assets/icon.png",
+  "galleryBanner": { "color": "#0f172a", "theme": "dark" },
+  "capabilities": { "untrustedWorkspaces": { "supported": true }, "virtualWorkspaces": true },
+  "activationEvents": ["onLanguage:python", "onLanguage:cpp", "onLanguage:java"],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "algosnap.insertTemplate",
-        "title": "AlgoSnap: Insert Algorithm Template"
-      }
-    ],
-    "keybindings": [
-      {
-        "command": "algosnap.insertTemplate",
-        "key": "ctrl+shift+a",
-        "mac": "cmd+shift+a",
-        "when": "editorTextFocus"
-      }
-    ],
+    "commands": [{ "command": "algosnap.insertTemplate", "title": "AlgoSnap: Insert Algorithm Template" }],
+    "keybindings": [{
+      "command": "algosnap.insertTemplate", "key": "ctrl+shift+a", "mac": "cmd+shift+a",
+      "when": "editorTextFocus && !editorReadonly && (editorLangId == python || editorLangId == cpp || editorLangId == java)"
+    }],
     "configuration": {
       "title": "AlgoSnap",
       "properties": {
-        "algosnap.triggerOnType": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show template picker automatically when a keyword is typed"
-        }
+        "algosnap.triggerOnType": { "type": "boolean", "default": true, "scope": "resource", "description": "Open the picker after typing an algorithm keyword on its own line." },
+        "algosnap.debounceMs": { "type": "number", "default": 450, "minimum": 100, "maximum": 2000, "scope": "resource", "description": "Pause in milliseconds before automatic suggestions appear." }
       }
     }
   },
   "scripts": {
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "vscode:prepublish": "npm run compile"
+    "compile": "tsc -p .",
+    "watch": "tsc -watch -p .",
+    "test": "npm run compile && node --test test/unit.test.cjs",
+    "test:algorithms": "npm run compile && node scripts/test-algorithms.cjs",
+    "test:integration": "npm run compile && node scripts/test-integration.cjs",
+    "check": "npm test && npm run test:algorithms",
+    "vscode:prepublish": "npm test",
+    "package": "vsce package",
+    "release:check": "node scripts/check-release.cjs",
+    "publish:marketplace": "npm run release:check && npm run check && vsce publish"
   },
   "devDependencies": {
-    "@types/vscode": "^1.85.0",
-    "@types/node": "^20.0.0",
-    "typescript": "^5.3.0"
+    "@types/vscode": "1.85.0",
+    "@types/node": "^22.0.0",
+    "typescript": "~5.9.3",
+    "@vscode/vsce": "4.0.0",
+    "@vscode/test-electron": "3.1.0"
   }
 }

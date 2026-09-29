@@ -1,0 +1,17 @@
+src/**
+test/**
+scripts/**
+docs/**
+.github/**
+.vscode/**
+.vscode-test/**
+.test-work/**
+.npm-cache/**
+node_modules/**
+tsconfig.json
+package-lock.json
+**/*.vsix
+**/*.log
+.gitignore
+.gitattributes
+CONTRIBUTING.md

@@ -1,4 +1,9 @@
-out
-node_modules
-.vscode
+node_modules/
+out/
 *.vsix
+.vscode-test/
+.test-work/
+.npm-cache/
+*.log
+.env
+.env.*
