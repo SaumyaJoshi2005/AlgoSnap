@@ -19,17 +19,18 @@
 - VSCE packaging with runtime JavaScript, documentation, license, and icon only.
 - The final VSIX installed successfully through the VS Code CLI using isolated
   user-data and extensions directories; the user's normal profile was not changed.
-- Release identity guard correctly rejects the temporary `algosnap-local` publisher.
+- Release identity guard correctly rejected the temporary `algosnap-local` publisher
+  in the initial build. The manifest now uses the owner-provided ID `SaumyaJoshi2005`.
 
 ## Limits and outstanding release work
 
 - VS Code 1.85.2 downloaded, but its older Electron/Node runtime failed to start
   in this Windows sandbox (`EPERM` while resolving the user-directory path).
   The minimum-version integration run is therefore **not locally verified**.
-  CI includes both 1.85.2 and stable integration jobs; those GitHub jobs have not
-  been run or observed here because no repository push was performed.
+  CI includes both 1.85.2 and stable integration jobs. See the draft PR's checks
+  for their current status; this report records the local validation run.
 - Public Marketplace publishing/install/update behavior is not yet verified.
-  Create a publisher, update the manifest, rebuild, and follow PUBLISHING.md.
+  Follow PUBLISHING.md after reconciling the additional templates on main.
 - Local context is heuristic, not scope/type checked. Template placement and C++
   headers remain the user's responsibility, as documented in the README.
 - No load-test or real-user adoption claims are made. The extension has no backend.
@@ -38,5 +39,7 @@
 
 The provided source was rebuilt from the supplied archive. A read-only inspection
 of the GitHub repository at `070ca0f3ae2f19680e7c52c77ccf838911cc312f` confirmed the
-prototype manifest and tracked build output. No GitHub files, commits, branches,
-issues, releases, or Marketplace listings were changed.
+prototype manifest and tracked build output. The candidate was subsequently
+pushed to `marketplace-ready-v0.2.0` and draft PR #1. Main and the Marketplace
+listing remain unchanged. Main has extra template families absent from the ZIP;
+those must be reconciled before this candidate is merged or published.

@@ -95,8 +95,9 @@ provided `algosnap-0.2.0.vsix`. Or run:
 code --install-extension algosnap-0.2.0.vsix
 ```
 
-The local build uses publisher `algosnap-local`. Replace it with your registered
-publisher before public release. This package has not been published on Marketplace.
+The configured publisher is `SaumyaJoshi2005`. This package has not been published
+on Marketplace. If you installed the earlier `algosnap-local.algosnap` build,
+uninstall it before installing this build to avoid duplicate commands.
 
 ## Development
 

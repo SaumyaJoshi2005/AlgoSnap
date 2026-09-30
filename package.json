@@ -3,7 +3,7 @@
   "displayName": "AlgoSnap",
   "description": "Offline algorithm templates for Python, C++, and Java with editable context-aware parameter names.",
   "version": "0.2.0",
-  "publisher": "algosnap-local",
+  "publisher": "SaumyaJoshi2005",
   "license": "MIT",
   "repository": { "type": "git", "url": "https://github.com/SaumyaJoshi2005/AlgoSnap.git" },
   "homepage": "https://github.com/SaumyaJoshi2005/AlgoSnap#readme",

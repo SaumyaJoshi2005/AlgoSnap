@@ -1,13 +1,16 @@
 # Publishing AlgoSnap
 
-The prepared VSIX installs locally using the placeholder publisher `algosnap-local`.
-Public Marketplace release needs a real publisher identity. Creating an ID does
-not require building a backend. Never paste access tokens into chat or Git.
+The manifest uses the owner-provided publisher ID `SaumyaJoshi2005`.
+The package is not yet published. Never paste access tokens into chat or Git.
+Before merging or publishing, reconcile the additional BFS, DP, tree, graph,
+and data-structure templates on `main` with this ZIP-based release candidate.
+See draft PR #1: https://github.com/SaumyaJoshi2005/AlgoSnap/pull/1.
 
 1. Sign in to [Marketplace publisher management](https://marketplace.visualstudio.com/manage)
-   with your Microsoft account and create a publisher. Choose a stable unique ID.
-2. Replace `publisher` in `package.json` with that exact ID. Verify that you own
-   the publisher and that the repository URL is public and correct.
+   with the Microsoft account that owns publisher `SaumyaJoshi2005`.
+2. Verify the publisher ID exactly matches `package.json` and that the repository
+   URL is public and correct. The local release check validates configuration;
+   it does not authenticate publisher ownership.
 3. Review the MIT license and release notes. Commit the clean source and lockfile
    to `https://github.com/SaumyaJoshi2005/AlgoSnap`. The repository inspected at
    commit `070ca0f3ae2f19680e7c52c77ccf838911cc312f` already has `src/`, but tracks
