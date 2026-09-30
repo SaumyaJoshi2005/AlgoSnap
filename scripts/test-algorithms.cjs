@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { ALGORITHMS } = require('../out/templates');
+const { CORE_ALGORITHMS: ALGORITHMS } = require('../out/templates');
 const directory = path.resolve('.test-work/algorithms');
 fs.mkdirSync(directory, { recursive: true });
 const render = language => ALGORITHMS.flatMap(a => a.templates).map(t =>

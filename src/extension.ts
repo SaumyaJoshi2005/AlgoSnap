@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { chooseNames, isLanguage, scanSource, ScannedContext } from './scanner';
-import { ALGORITHMS, Template } from './templates';
+import { ALGORITHMS, getTemplates, supportsTemplate, Template } from './templates';
 import { Debouncer, matchTrigger, MAX_CONTEXT_CHARS } from './trigger';
 
 interface Snapshot {
@@ -27,9 +27,9 @@ function isCurrent(snapshot: Snapshot): boolean {
 }
 
 /** Escape literal content and link parameter names with editable snippet tab stops. */
-export function createSnippet(code: string, context: ScannedContext): vscode.SnippetString {
+export function createSnippet(code: string, context: ScannedContext, parameters?: readonly string[]): vscode.SnippetString {
   const names = chooseNames(context);
-  const editable = new Set([names.array, names.target, names.window, 'grid']);
+  const editable = new Set(parameters ?? [names.array, names.target, names.window, 'grid']);
   const indices = new Map<string, number>();
   const snippet = new vscode.SnippetString();
   let previous = 0;
@@ -53,8 +53,8 @@ export function createSnippet(code: string, context: ScannedContext): vscode.Sni
 }
 
 export async function insertTemplate(snapshot: Snapshot, template: Template): Promise<boolean> {
-  if (!isCurrent(snapshot)) return false;
-  return snapshot.editor.insertSnippet(createSnippet(template.render(snapshot.context), snapshot.context),
+  if (!isCurrent(snapshot) || !supportsTemplate(template, snapshot.context.language)) return false;
+  return snapshot.editor.insertSnippet(createSnippet(template.render(snapshot.context), snapshot.context, template.parameters),
     snapshot.range, { undoStopBefore: true, undoStopAfter: true });
 }
 
@@ -71,6 +71,10 @@ export function activate(context: vscode.ExtensionContext): void {
   };
   async function pick(snapshot: Snapshot, templates: readonly Template[]): Promise<void> {
     if (busy || !isCurrent(snapshot)) return;
+    if (templates.length === 0) {
+      void vscode.window.showInformationMessage(`AlgoSnap: this algorithm has no ${snapshot.context.language} template yet.`);
+      return;
+    }
     busy = true;
     const cancellation = new vscode.CancellationTokenSource();
     pickerCancellation = cancellation;
@@ -78,7 +82,7 @@ export function activate(context: vscode.ExtensionContext): void {
       const names = chooseNames(snapshot.context);
       const chosen = await vscode.window.showQuickPick(templates.map(template => ({
         label: template.label, detail: template.detail, template,
-        description: `${snapshot.context.language} | names: ${names.array}, ${names.target}, ${names.window}`
+        description: `${snapshot.context.language} | ${template.parameters ? (template.parameters.length ? 'parameters: ' + template.parameters.join(', ') : 'example / data structure') : 'names: ' + [names.array, names.target, names.window].join(', ')}`
       })), { title: 'AlgoSnap: Insert Algorithm Template', matchOnDetail: true,
         placeHolder: 'Select a template. Tab through parameter names after insertion.' }, cancellation.token);
       if (chosen && !cancellation.token.isCancellationRequested) {
@@ -110,7 +114,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }
     const snapshot = capture(editor, new vscode.Range(line.range.end, line.range.end));
     if (!snapshot) return;
-    const templates = ALGORITHMS.flatMap(algorithm => [...algorithm.templates]);
+    const templates = getTemplates(snapshot.context.language);
     // Optional stable template ID supports keybindings and integration tests.
     if (typeof templateId === 'string') {
       const template = templates.find(item => item.id === templateId);
@@ -150,7 +154,7 @@ export function activate(context: vscode.ExtensionContext): void {
       const range = new vscode.Range(event.document.positionAt(match.start), event.document.positionAt(match.end));
       const snapshot = capture(editor, range);
       const algorithm = ALGORITHMS.find(item => item.id === match.algorithmId);
-      if (snapshot && algorithm) void pick(snapshot, algorithm.templates);
+      if (snapshot && algorithm) void pick(snapshot, getTemplates(snapshot.context.language, algorithm));
     }, delay);
   });
   context.subscriptions.push(manual, typing, debounce, output,

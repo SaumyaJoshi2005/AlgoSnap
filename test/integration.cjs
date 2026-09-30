@@ -75,6 +75,27 @@ exports.run = async function run() {
   await delay(850);
   await vscode.commands.executeCommand('workbench.action.acceptSelectedQuickOpenItem');
   assert.equal(pasted.document.getText(), '\nbinary search');
-  console.log('PASS: activation, insertion, linked placeholders, undo, indentation, language guard, stale edit rejection, auto trigger, cancellation, and paste suppression.');
+  const restoredJava = await document('java','class Restored {\n    \n}');
+  restoredJava.selection = new vscode.Selection(1,4,1,4);
+  const unchanged = restoredJava.document.getText();
+  await vscode.commands.executeCommand('algosnap.insertTemplate','python-tree-inorder');
+  assert.equal(restoredJava.document.getText(), unchanged, 'unsupported native template must be rejected');
+  await vscode.commands.executeCommand('algosnap.insertTemplate','java-coin-change');
+  assert.match(restoredJava.document.getText(), /    public static int coinChange/);
+  assert.match(restoredJava.document.getText(), /java.util.Arrays.fill/);
+  assert.doesNotMatch(restoredJava.document.getText(), /^\s*import /m);
+  await vscode.commands.executeCommand('leaveSnippet');
+
+  const restoredPython = await document('python','\n');
+  for(const char of 'bfs') await vscode.commands.executeCommand('type',{text:char});
+  await delay(850);
+  await vscode.commands.executeCommand('workbench.action.acceptSelectedQuickOpenItem');
+  await delay(250);
+  assert.match(restoredPython.document.getText(), /def bfs\(graph, start\)/);
+  assert.equal(restoredPython.document.getText(restoredPython.selection), 'graph');
+  await vscode.commands.executeCommand('type',{text:'adjacency'});
+  assert.match(restoredPython.document.getText(), /adjacency.get\(node/);
+  await vscode.commands.executeCommand('leaveSnippet');
+  console.log('PASS: activation, snippets, undo, indentation, language guard, stale rejection, triggers/cancellation/paste, restored Java DP and Python BFS, and linked extended parameters.');
   await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 };

@@ -2,22 +2,19 @@
 
 The manifest uses the owner-provided publisher ID `SaumyaJoshi2005`.
 The package is not yet published. Never paste access tokens into chat or Git.
-Before merging or publishing, reconcile the additional BFS, DP, tree, graph,
-and data-structure templates on `main` with this ZIP-based release candidate.
-See draft PR #1: https://github.com/SaumyaJoshi2005/AlgoSnap/pull/1.
+The extra BFS, DP, tree, graph, and data-structure templates on `main` are now
+reconciled in 0.3.0; see CATALOG-MIGRATION.md and the checks on
+[PR #1](https://github.com/SaumyaJoshi2005/AlgoSnap/pull/1) before merging/publishing.
 
 1. Sign in to [Marketplace publisher management](https://marketplace.visualstudio.com/manage)
    with the Microsoft account that owns publisher `SaumyaJoshi2005`.
 2. Verify the publisher ID exactly matches `package.json` and that the repository
    URL is public and correct. The local release check validates configuration;
    it does not authenticate publisher ownership.
-3. Review the MIT license and release notes. Commit the clean source and lockfile
-   to `https://github.com/SaumyaJoshi2005/AlgoSnap`. The repository inspected at
-   commit `070ca0f3ae2f19680e7c52c77ccf838911cc312f` already has `src/`, but tracks
-   generated `out/*.js` despite ignoring `out`. In your checkout, after reviewing
-   the changes, use `git rm --cached -r out` to stop tracking generated files while
-   keeping them locally. The updated `.gitignore` also allows `.vscode/` launch
-   and task configurations to be committed. Preserve unrelated/newer work.
+3. Review the MIT license, migration notes, release notes, and PR. This branch
+   removes generated `out/*.js` from version control and includes `.vscode/`
+   launch/tasks configuration. Keep the source and lockfile committed; inspect
+   all GitHub checks before approving the PR.
 4. Run `npm ci`, `npm run check`, `npm run test:integration`, and
    `npm run release:check`.
 5. Run `npm run package`. Install the resulting VSIX in a clean VS Code profile

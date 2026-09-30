@@ -4,7 +4,7 @@ Algorithm templates that fit your editor context. Works offline in VS Code.
 
 ![AlgoSnap icon](assets/icon.png)
 
-Insert tested Python, C++17, and Java algorithm functions from a searchable picker.
+Insert tested Python, C++17, and Java algorithms and data-structure examples from a searchable picker.
 AlgoSnap suggests parameter names from preceding code and lets you edit linked
 names with Tab. No account, API key, backend, or network request is needed.
 
@@ -23,7 +23,8 @@ references when you rename a placeholder.
 
 ### Automatic suggestions
 
-Type `binary search`, `two pointer`, `sliding window`, or `dfs` on its own line,
+Type `binary search`, `two pointer`, `sliding window`, `dfs`, `bfs`, `dp`,
+`tree`, `graph`, `trie`, or `heap` on its own line,
 then pause. The picker replaces that keyword after you select a variant.
 Keywords are case-insensitive; aliases such as `binary_search`, `bisect`, and
 `flood fill` also work. Comments, common string literals, pasted multi-character
@@ -33,7 +34,10 @@ cancels it so an outdated selection cannot overwrite new text.
 
 ## Included templates
 
-All eight variants are implemented in **all three languages** (24 combinations).
+There are **68 native-language implementations**: 34 Python, 20 C++, and 14 Java.
+The eight core variants below work in all three languages (24 combinations).
+The restored catalog contributes 44 more implementations with explicit language
+support; the picker never falls back to code from another language.
 
 | Family | Variants | Contract |
 | --- | --- | --- |
@@ -42,6 +46,20 @@ All eight variants are implemented in **all three languages** (24 combinations).
 | Sliding window | Maximum sum of a fixed-size window | `1 <= k <= length`; invalid sizes throw |
 | Grid DFS | Iterative island count | Rectangular 0/1 grid, four-way adjacency; input preserved |
 
+| Restored family | Python | C++ | Java |
+| --- | --- | --- | --- |
+| BFS | Graph reachability, distances, grid paths | Graph distances | Not yet supported |
+| Dynamic programming | Knapsack, LCS, LIS, coin change, subset sum, edit distance | Knapsack, LCS, coin change | LCS, coin change |
+| Binary trees | Node/inorder, level order, BST LCA, max depth, validate BST | Not yet supported | Not yet supported |
+| Graphs | Adjacency list, topological sort, Dijkstra, DSU | Topological sort, Dijkstra, DSU | Not yet supported |
+| Data structures | Counter, stack, deque, heap, linked list, trie, segment tree, sorted list | Map, set, heap, stack/queue, DSU, trie | Map/set, heap, stack/deque, ordered map/set |
+
+Aliases such as `knapsack`, `lcs`, `coin change`, `dijkstra`, `union find`,
+`segment tree`, and `priority queue` select the corresponding variants.
+Type `data structures` to browse the collection. Shared variants such as DSU
+appear only once in the manual picker. See [catalog migration](docs/CATALOG-MIGRATION.md)
+for the preservation map and changed contracts.
+
 Lower/upper bound return the first index with value `>=` / `>` the target,
 or the array length. Exact/rotated search return `-1` when absent. Two sum
 returns zero-based indices, or an empty result. Grid DFS supports empty grids
@@ -49,14 +67,19 @@ and uses an explicit stack to avoid recursive stack overflow.
 
 ### Placement and prerequisites
 
-- Python: insert where a function definition belongs; indentation follows VS Code.
+- Python: insert at module scope for examples containing imports/classes/sample
+  statements; indentation follows VS Code. All dependencies are standard-library modules.
 - C++: insert outside other functions, use C++17 or later, and add the headers
-  named in the generated comment (`<vector>`, plus `<stdexcept>` / `<utility>`
-  where needed). Standard library names are qualified with `std::`.
+  named in the generated comment. Standard library names are qualified with `std::`.
 - Java: insert inside a class, outside other methods. Generated methods are static
-  and use primitive `int[]` / `int[][]`; collection classes are fully qualified.
+  where shown; collection classes are fully qualified, so no import needs to be
+  inserted inside a class. Data-structure demos are self-contained example methods.
 - C is **not supported**. Java inputs must be non-null (including grid rows).
   C++ collection dimensions must fit in `int`; sums use `long long` / Java `long`.
+- Read each variant's picker details for input preconditions. DP requires inputs
+  small enough for its stated memory complexity; graph vertices/weights and
+  tree structure must follow the displayed contract. Code is a reusable starting
+  point, not an automatic conversion of surrounding data structures.
 
 ## Settings
 
@@ -76,6 +99,9 @@ patterns to suggest names from preceding code. It is **not a compiler, AST, or
 scope/type checker**. Review suggestions; a nearby variable name does not prove
 that its type or scope matches the generated function. Grid DFS uses `grid` as
 an editable default. Unsupported declarations fall back to `nums`, `target`, `k`.
+Restored multi-parameter algorithms use stable descriptive defaults (`weights`,
+`capacity`, `graph`, etc.) with explicit linked tab stops; the flat scanner cannot
+reliably infer these roles. Standalone examples/classes may have no editable tab stops.
 
 To keep editor work bounded, automatic triggers only scan prefixes up to
 200,000 characters. Past that position, the manual command still works with
@@ -89,10 +115,10 @@ source, or collect telemetry. See [PRIVACY.md](PRIVACY.md).
 ## Local installation
 
 In VS Code, choose **Extensions > ... > Install from VSIX...** and select the
-provided `algosnap-0.2.0.vsix`. Or run:
+provided `algosnap-0.3.0.vsix`. Or run:
 
 ```sh
-code --install-extension algosnap-0.2.0.vsix
+code --install-extension algosnap-0.3.0.vsix
 ```
 
 The configured publisher is `SaumyaJoshi2005`. This package has not been published
@@ -132,6 +158,7 @@ steps at [GitHub Issues](https://github.com/SaumyaJoshi2005/AlgoSnap/issues).
 
 ## Release notes
 
-The 0.2.0 release replaces inconsistent prototype fallbacks with explicit
-language support. It drops incomplete `is_valid`/`feasible` skeletons and the
-mixed import-and-statement Java wrapper. See [CHANGELOG.md](CHANGELOG.md).
+Version 0.3.0 restores the 44 native implementations found in GitHub but absent
+from the original ZIP, with fixes and per-variant runtime checks. The core still
+omits incomplete `is_valid`/`feasible` skeletons and the mixed import-and-statement
+Java wrapper, as documented in 0.2.0. See [CHANGELOG.md](CHANGELOG.md).

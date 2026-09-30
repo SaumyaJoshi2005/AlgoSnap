@@ -1,7 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { maskNonCode, scanSource, chooseNames, isLanguage } = require('../out/scanner');
-const { ALGORITHMS, findAlgorithm } = require('../out/templates');
+const { ALGORITHMS, CORE_ALGORITHMS, getTemplates, findAlgorithm } = require('../out/templates');
 const { matchTrigger, Debouncer, MAX_CONTEXT_CHARS } = require('../out/trigger');
 
 test('comments and literals preserve source positions and cannot supply names', () => {
@@ -37,10 +37,10 @@ test('aliases are exact, unique, and come from the registry', () => {
   assert.equal(isLanguage('markdown'), false);
 });
 test('all 24 template/language combinations render complete code', () => {
-  const ids = ALGORITHMS.flatMap(a => a.templates.map(t => t.id));
+  const ids = CORE_ALGORITHMS.flatMap(a => a.templates.map(t => t.id));
   assert.equal(new Set(ids).size, 8);
   for (const language of ['python', 'cpp', 'java']) {
-    for (const algorithm of ALGORITHMS) {
+    for (const algorithm of CORE_ALGORITHMS) {
       for (const template of algorithm.templates) {
         const code = template.render({language,arrays:['data'],integers:['key','windowSize']});
         assert.ok(code.length > 100);
@@ -64,6 +64,31 @@ test('triggers match only entire keyword lines, respecting offsets and case', ()
 });
 test('large prefixes are declined without expensive lexical scanning', () => {
   assert.equal(matchTrigger(' '.repeat(MAX_CONTEXT_CHARS) + '\ndfs', 'python'), undefined);
+});
+test('restored catalog retains every native implementation without language fallbacks or duplicate picker rows', () => {
+  const counts = {python:34, cpp:20, java:14};
+  for (const [language, count] of Object.entries(counts)) {
+    const templates = getTemplates(language);
+    assert.equal(templates.length, count);
+    assert.equal(new Set(templates.map(t => t.id)).size, count);
+    for (const template of templates) {
+      assert.ok(!template.languages || template.languages.includes(language));
+      assert.ok(template.render({language,arrays:[],integers:[]}).length > 50);
+    }
+  }
+  for (const alias of ['bfs','dp','knapsack','coin change','edit distance','subset sum','lcs','lis',
+    'tree','binary tree','bst','treenode','level order','lca','graph','dijkstra','topo sort',
+    'topological sort','union find','dsu','hashmap','hash map','stack','queue','deque','heap',
+    'priority queue','linked list','trie','segment tree','treemap','treeset','sorted list']) {
+    assert.ok(findAlgorithm(alias), alias);
+    assert.ok(matchTrigger(alias,'python'), alias);
+  }
+  assert.equal(getTemplates('java',findAlgorithm('bfs')).length,0);
+  assert.equal(getTemplates('cpp',findAlgorithm('tree')).length,0);
+  assert.equal(getTemplates('java',findAlgorithm('trie')).length,0);
+  assert.deepEqual(getTemplates('cpp',findAlgorithm('dsu')).map(t=>t.id),['cpp-dsu']);
+  assert.deepEqual(getTemplates('java',findAlgorithm('coin change')).map(t=>t.id),['java-coin-change']);
+  assert.throws(()=>getTemplates('python',findAlgorithm('tree'))[0].render({language:'java',arrays:[],integers:[]}),/does not support/);
 });
 test('debouncer only fires the last event and cancels on disposal', async () => {
   const debounce = new Debouncer(); let calls = 0;

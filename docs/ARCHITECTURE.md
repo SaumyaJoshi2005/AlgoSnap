@@ -22,7 +22,10 @@ Snapshot validation -> linked snippet -> one editor transaction
 ## Components and boundaries
 
 - `scanner.ts`: pure lexical masking, declaration heuristics, collision avoidance.
-- `templates.ts`: typed algorithm/variant definitions and all language bodies.
+- `templates.ts`: typed definitions, core templates, language filtering/deduplication.
+- `catalog/index.ts`: aliases, native-language capabilities, contracts, and editable parameters.
+- `catalog/{python,cpp,java}.ts`: restored implementations grouped by language.
+- `catalog/legacy.ts`: small adapter interface for the original generator shape.
 - `trigger.ts`: exact alias matching and a disposable debounce timer.
 - `extension.ts`: VS Code events, settings, picker lifecycle, document snapshots,
   snippet encoding, and insertion. Only this production module imports `vscode`.
@@ -31,6 +34,10 @@ The registry is the source of truth for both automatic triggers and the manual
 picker. Renderers only receive plain context data; they never access the editor.
 Templates have stable IDs usable as command arguments in custom keybindings.
 Literal snippet content is escaped, and parameter names share tab stops.
+Core variants infer names from context. Complex restored variants deliberately
+use explicit role names instead of guessing several distinct inputs from a flat
+variable list. Unsupported language/variant pairs are filtered at the picker and
+checked again at insertion/rendering; duplicate alias groups cannot duplicate rows.
 
 ## Correctness and concurrency
 
@@ -59,8 +66,8 @@ activation, actual snippets, undo, indentation, automatic triggers, and stale ed
 
 ## Future work
 
-Add scope-aware parsing only after measuring heuristic failures. For more
-algorithms, split template families into modules behind the same registry.
+Add scope-aware parsing only after measuring heuristic failures. Add further
+native-language implementations through the existing catalog modules and registry.
 Optional team sync would justify an authenticated API and database; it would be
 a separate feature with an explicit privacy model. Current insertion needs no
 server scaling or backend rate limiter.

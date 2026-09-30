@@ -1,6 +1,13 @@
 import { chooseNames, Language, ScannedContext } from './scanner';
+import { EXTRA_ALGORITHMS } from './catalog';
 
-export interface Template { id: string; label: string; detail: string; render(context: ScannedContext): string }
+export interface Template {
+  id: string; label: string; detail: string;
+  languages?: readonly Language[];
+  /** Explicit editable names; absent means use context-derived core names. */
+  parameters?: readonly string[];
+  render(context: ScannedContext): string;
+}
 export interface Algorithm { id: string; label: string; aliases: readonly string[]; templates: readonly Template[] }
 type Bodies = Record<Language, (array: string, target: string, window: string) => string>;
 function template(id: string, label: string, detail: string, bodies: Bodies): Template {
@@ -316,12 +323,20 @@ const rotated = template('binary-rotated', 'Binary search: rotated array',
   java: (a, t) => rotatedBraces(a, t, true)
 });
 /** Single source of truth for aliases, routing, and picker entries. */
-export const ALGORITHMS: readonly Algorithm[] = [
+export const CORE_ALGORITHMS: readonly Algorithm[] = [
   { id: 'binary-search', label: 'Binary search', aliases: ['binary search', 'binary_search', 'binarysearch', 'bisect'], templates: [binary, bound(false), bound(true), rotated] },
   { id: 'two-pointers', label: 'Two pointers', aliases: ['two pointer', 'two pointers', 'two_pointer', 'twopointer', '2pointer', '2 pointer'], templates: [twoSum, deduplicate] },
   { id: 'sliding-window', label: 'Sliding window', aliases: ['sliding window', 'sliding_window', 'slidingwindow'], templates: [windowSum] },
   { id: 'dfs', label: 'Grid DFS', aliases: ['dfs', 'depth first', 'depth first search', 'depth_first', 'flood fill'], templates: [islands] }
 ];
+export const ALGORITHMS: readonly Algorithm[] = [...CORE_ALGORITHMS, ...EXTRA_ALGORITHMS];
+export function supportsTemplate(template: Template, language: Language): boolean {
+  return !template.languages || template.languages.includes(language);
+}
+export function getTemplates(language: Language, algorithm?: Algorithm): Template[] {
+  const candidates = (algorithm ? [algorithm] : ALGORITHMS).flatMap(item => [...item.templates]);
+  return [...new Map(candidates.filter(item => supportsTemplate(item, language)).map(item => [item.id, item])).values()];
+}
 export function findAlgorithm(keyword: string): Algorithm | undefined {
   const normalized = keyword.trim().toLowerCase();
   return ALGORITHMS.find(algorithm => algorithm.aliases.includes(normalized));
